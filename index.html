@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stranger Things - Responsive Wall</title>
+    <style>
+        /* Custom Font Face */
+        @font-face {
+            font-family: 'DK Downward Fall';
+            src: url('DK Downward Fall.ttf') format('truetype');
+        }
+
+        /* Siyah Arka Plan */
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #000;
+            height: 100vh;
+            width: 100vw;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        /* OYUN ALANI (Resim ve Işıkları Tutan Kutu) */
+        #game-board {
+            position: relative;
+            /* Resim en boy oranını koruyarak ekrana sığsın */
+            max-width: 100%;
+            max-height: 100%;
+            box-shadow: 0 0 50px rgba(0,0,0,0.8);
+        }
+
+        /* Duvar Resmi */
+        #wall-img {
+            display: block;
+            width: 100%;
+            height: auto;
+            max-height: 100vh; /* Ekran boyunu taşmasın */
+            pointer-events: auto; /* Tıklama için gerekli */
+        }
+
+        /* Işık Noktaları (Ampuller) */
+        .bulb {
+            position: absolute;
+            width: 2.5%; /* Sabit px yerine resme göre oranla büyüsün */
+            padding-bottom: 2.5%; /* Kare olması için trick */
+            height: 0;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            opacity: 0.3;
+            filter: blur(4px);
+            transition: opacity 0.1s;
+            mix-blend-mode: hard-light;
+        }
+
+        /* Işık Yandığında */
+        .bulb.active {
+            opacity: 1;
+            box-shadow: 0 0 20px 5px currentColor;
+            z-index: 10;
+        }
+
+        /* UI Elemanları (Buton ve Modal) */
+        #settings-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            background: rgba(0, 0, 0, 0.7);
+            color: #fff;
+            border: 1px solid #fff;
+            cursor: pointer;
+            z-index: 1000;
+        }
+
+        #modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+
+        .modal-content {
+            background: #222;
+            padding: 30px;
+            border: 2px solid #c41e3a;
+            color: #fff;
+            text-align: center;
+            max-width: 90%;
+        }
+
+        input {
+            padding: 10px;
+            font-size: 1.2rem;
+            text-transform: uppercase;
+            width: 80%;
+            margin: 20px 0;
+        }
+
+        .hidden { display: none !important; }
+        
+        /* Koordinat Bulucu Bilgi Kutusu */
+        #coord-info {
+            position: fixed;
+            bottom: 10px;
+            left: 10px;
+            background: white;
+            color: black;
+            padding: 5px;
+            font-size: 12px;
+            display: none; /* Sadece geliştirme modunda açılacak */
+            z-index: 3000;
+        }
+
+        /* Z Harfi */
+        #z-letter {
+            position: absolute;
+            left: 88%;
+            top: 72%;
+            transform: translate(-50%, -50%);
+            font-family: 'DK Downward Fall';
+            font-size: 8vw;
+            color: #000000b8;
+            z-index: 0;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-board">
+        <img src="no-light-wall.png" id="wall-img" alt="Stranger Things Wall">
+        <div id="z-letter">Z</div>
+    </div>
+
+    <button id="settings-btn" onclick="openModal()">Mesaj Yaz</button>
+    <div id="coord-info">Tıklanan yerin koordinatı burada çıkacak</div>
+
+    <div id="modal-overlay">
+        <div class="modal-content">
+            <h2 style="color:#c41e3a; letter-spacing:3px; text-shadow: 0 0 5px #c41e3a;">BAŞ AŞAĞI DÜNYA'DAN İLETİŞİM</h2>
+            
+            <p style="font-size: 1.1rem; color: #ddd;">
+                Karanlık boşluğu kıracak, Işıkları titretecek mesajı girin.
+            </p>
+
+            <input 
+                type="text" 
+                id="message-input" 
+                placeholder="MAMA NEREDEYİM" 
+                maxlength="50" 
+                autocomplete="off"
+            >
+            <br>
+
+            <button class="start-btn" onclick="startAnimation()">IŞIKLARI YAK</button>
+            
+            <br><br>
+            <small style="color:#777; cursor:pointer;" onclick="toggleDevMode()">[Geliştirici Modu: Koordinat Bul]</small>
+        </div>
+    </div>
+
+    <script>
+        const letterMap = {
+            'A': { left: '22.5%', top: '14.0%', color: '#fff' },
+            'B': { left: '31.5%', top: '14.5%', color: '#4cb7ff' },
+            'C': { left: '38.0%', top: '16.0%', color: '#e74c3c' },
+            'D': { left: '49.5%', top: '19.0%', color: '#2ecc71' },
+            'E': { left: '56.5%', top: '20.0%', color: '#4cb7ff' },
+            'F': { left: '67.5%', top: '23.0%', color: '#e67e22' },
+            'G': { left: '74.5%', top: '22.0%', color: '#e74c3c' },
+            'H': { left: '82.5%', top: '22.0%', color: '#4cb7ff' },
+
+            'I': { left: '9.5%', top: '33.0%', color: '#e74c3c' },
+            'J': { left: '23.5%', top: '39.0%', color: '#4cb7ff' },
+            'K': { left: '32.0%', top: '41.5%', color: '#fff' },
+            'L': { left: '40.5%', top: '43.0%', color: '#4cb7ff' },
+            'M': { left: '50%', top: '43.0%', color: '#f1c40f' },
+            'N': { left: '57.0%', top: '40.0%', color: '#2ecc71' },
+            'O': { left: '66.0%', top: '38.0%', color: '#e74c3c' },
+            'P': { left: '74.0%', top: '39.0%', color: '#fff' },
+            'Q': { left: '90%', top: '41.5%', color: '#e67e22' },
+
+            'R': { left: '16.0%', top: '59.0%', color: '#4cb7ff' },
+            'S': { left: '25%', top: '62.0%', color: '#fff' },
+            'T': { left: '32.4%', top: '65.0%', color: '#f1c40f' },
+            'U': { left: '44.0%', top: '65.0%', color: '#4cb7ff' },
+            'V': { left: '52%', top: '65.0%', color: '#e74c3c' },
+            'W': { left: '60.0%', top: '64.0%', color: '#2ecc71' },
+            'X': { left: '67.5%', top: '63.5%', color: '#e67e22' },
+            'Y': { left: '76.0%', top: '62.0%', color: '#e74c3c' },
+            'Z': { left: '88.0%', top: '63.0%', color: '#e67e22' }
+        };
+
+        let isAnimating = false;
+        let animationTimeout;
+        let currentMessage = "";
+
+        window.onload = () => {
+            createBulbs();
+        };
+
+        function createBulbs() {
+            const board = document.getElementById('game-board');
+            document.querySelectorAll('.bulb').forEach(e => e.remove());
+
+            for (let char in letterMap) {
+                const data = letterMap[char];
+                const bulb = document.createElement('div');
+                bulb.className = 'bulb';
+                bulb.id = 'bulb-' + char;
+                bulb.style.left = data.left;
+                bulb.style.top = data.top;
+                bulb.style.backgroundColor = data.color;
+                bulb.style.color = data.color; // Gölge rengi
+                board.appendChild(bulb);
+            }
+        }
+
+        // --- ANİMASYON MANTIĞI ---
+        function openModal() {
+            stopAnimation();
+            document.getElementById('modal-overlay').classList.remove('hidden');
+        }
+
+        function stopAnimation() {
+            isAnimating = false;
+            clearTimeout(animationTimeout);
+            document.querySelectorAll('.bulb').forEach(b => b.classList.remove('active'));
+        }
+
+        function startAnimation() {
+            const input = document.getElementById('message-input').value;
+            if (!input.trim()) return;
+            
+            currentMessage = input.toUpperCase().replace(/[^A-Z]/g, '');
+            document.getElementById('modal-overlay').classList.add('hidden');
+            isAnimating = true;
+            runLoop();
+        }
+
+        async function runLoop() {
+            if (!isAnimating) return;
+
+            for (let i = 0; i < currentMessage.length; i++) {
+                if (!isAnimating) break;
+                const char = currentMessage[i];
+                const bulb = document.getElementById('bulb-' + char);
+
+                if (bulb) {
+                    bulb.classList.add('active');
+                    await new Promise(r => animationTimeout = setTimeout(r, 1000));
+                    bulb.classList.remove('active');
+                    await new Promise(r => animationTimeout = setTimeout(r, 300));
+                }
+            }
+            
+            if (isAnimating) {
+                await new Promise(r => animationTimeout = setTimeout(r, 2000));
+                runLoop();
+            }
+        }
+
+        // --- GELİŞTİRİCİ MODU (Koordinat Ayarlamak İçin) ---
+        let devMode = false;
+        function toggleDevMode() {
+            devMode = !devMode;
+            const infoBox = document.getElementById('coord-info');
+            infoBox.style.display = devMode ? 'block' : 'none';
+            document.getElementById('modal-overlay').classList.add('hidden');
+            alert(devMode ? "Geliştirici Modu AÇIK: Resimde bir lambaya tıkla, koordinatı al." : "Geliştirici Modu KAPALI");
+        }
+
+        // Resme tıklayınca koordinat hesapla
+        document.getElementById('wall-img').addEventListener('click', function(e) {
+            if (!devMode) return;
+
+            const rect = this.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            // Yüzdeleri hesapla
+            const perX = (x / rect.width * 100).toFixed(1);
+            const perY = (y / rect.height * 100).toFixed(1);
+
+            const coordText = `left: '${perX}%', top: '${perY}%'`;
+            console.log(coordText); // Konsola yaz
+            
+            // Ekrana yaz ve kopyala
+            const infoBox = document.getElementById('coord-info');
+            infoBox.innerHTML = `Kopyalandı: <b>${coordText}</b>`;
+            navigator.clipboard.writeText(coordText);
+        });
+    </script>
+</body>
+</html>
