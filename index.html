@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ST - Light Letters Upside Down</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         @font-face {
             font-family: 'DK Downward Fall';
@@ -74,6 +75,23 @@
             border-color: #c41e3a;
         }
 
+        #sound-btn {
+            position: fixed;
+            top: 65px;
+            right: 20px;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            color: #fff;
+            border: 1px solid #fff;
+            cursor: pointer;
+            z-index: 1000;
+            opacity: 0.3;
+        }
+        #sound-btn:hover {
+            opacity: 0.9;
+            border-color: #c41e3a;
+        }
+
         #modal-overlay {
             position: fixed;
             top: 0;
@@ -138,8 +156,13 @@
         <div id="z-letter">Z</div>
     </div>
 
+    <audio id="light-sound" preload="auto">
+        <source src="Tzz.mp3" type="audio/mp3">
+    </audio>
+
     <button id="settings-btn" onclick="openModal()">Write</button>
-    
+    <button id="sound-btn" onclick="toggleSound()"><i class="fas fa-volume-up"></i></button>
+
 
     <div id="modal-overlay">
         <div class="modal-content">
@@ -165,6 +188,26 @@
     </div>
 
     <script>
+        let soundEnabled = true;
+
+        function playLightSound() {
+            if (!soundEnabled) return;
+            const sound = document.getElementById('light-sound');
+            sound.currentTime = 0;
+            sound.play().catch(err => console.log('Sound play error:', err));
+        }
+
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            const btn = document.getElementById('sound-btn');
+            const icon = btn.querySelector('i');
+            if (soundEnabled) {
+                icon.className = 'fas fa-volume-up';
+            } else {
+                icon.className = 'fas fa-volume-mute';
+            }
+        }
+
         const letterMap = {
             'A': { left: '22.5%', top: '14.0%', color: '#d4d4d4' },
             'B': { left: '31.5%', top: '14.5%', color: '#4cb7ff' },
@@ -253,6 +296,7 @@
             for (let i = 0; i < flashCount; i++) {
                 // Turn on all bulbs
                 bulbs.forEach(bulb => bulb.classList.add('active'));
+                playLightSound();
                 await new Promise(r => setTimeout(r, 80));
 
                 // Turn off all bulbs
@@ -277,6 +321,7 @@
 
                 if (bulb) {
                     bulb.classList.add('active');
+                    playLightSound();
                     await new Promise(r => animationTimeout = setTimeout(r, 1000));
                     bulb.classList.remove('active');
                     await new Promise(r => animationTimeout = setTimeout(r, 300));
