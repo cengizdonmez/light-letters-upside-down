@@ -6,11 +6,13 @@
     <title>ST - Light Letters Upside Down</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
+        /* Harflerin Yazı Tipi */
         @font-face {
             font-family: 'DK Downward Fall';
             src: url('DK Downward Fall.ttf') format('truetype');
         }
 
+        /* Genel Sayfa Ayarları */
         body {
             margin: 0;
             padding: 0;
@@ -24,6 +26,7 @@
             font-family: 'Courier New', Courier, monospace;
         }
 
+        /* OYUN ALANI (Responsive Kapsayıcı) */
         #game-board {
             position: relative;
             max-width: 100%;
@@ -31,6 +34,7 @@
             box-shadow: 0 0 50px rgba(0,0,0,0.8);
         }
 
+        /* Duvar Resmi */
         #wall-img {
             display: block;
             width: 100%;
@@ -39,25 +43,28 @@
             pointer-events: auto; 
         }
 
+        /* Işık Noktaları (Ampuller) */
         .bulb {
             position: absolute;
             width: 2.5%; 
-            padding-bottom: 2.5%; 
+            padding-bottom: 2.5%; /* Kare olması için trick */
             height: 0;
             border-radius: 50%;
             transform: translate(-50%, -50%);
             opacity: 0;
-            filter: blur(4px);
+            filter: blur(4px); /* Yumuşak bir parlama efekti */
             transition: opacity 0.1s;
             mix-blend-mode: hard-light;
         }
 
+        /* Işık Yandığında */
         .bulb.active {
             opacity: 1;
             box-shadow: 0 0 20px 5px currentColor;
             z-index: 10;
         }
 
+        /* Sağ Üstteki Ayar Butonu */
         #settings-btn {
             position: fixed;
             top: 20px;
@@ -75,6 +82,7 @@
             border-color: #c41e3a;
         }
 
+        /* Ses Butonu */
         #sound-btn {
             position: fixed;
             top: 65px;
@@ -92,6 +100,7 @@
             border-color: #c41e3a;
         }
 
+        /* Modal (Giriş Ekranı) */
         #modal-overlay {
             position: fixed;
             top: 0;
@@ -122,9 +131,25 @@
             width: 80%;
             margin: 20px 0;
         }
+        
+        .start-btn {
+            padding: 10px 30px;
+            font-size: 18px;
+            background: #c41e3a;
+            color: #fff;
+            border: none;
+            cursor: pointer;
+            text-transform: uppercase;
+            font-weight: bold;
+        }
+        .start-btn:hover {
+            background: #ff2a4d;
+            box-shadow: 0 0 15px #c41e3a;
+        }
 
         .hidden { display: none !important; }
         
+        /* Koordinat Bulucu Bilgi Kutusu */
         #coord-info {
             position: fixed;
             bottom: 10px;
@@ -137,6 +162,7 @@
             z-index: 3000;
         }
 
+        /* Duvara gömülü 'Z' harfi (isteğe bağlı) */
         #z-letter {
             position: absolute;
             left: 88%;
@@ -156,6 +182,10 @@
         <div id="z-letter">Z</div>
     </div>
 
+    <audio id="bg-music" loop preload="auto" volume="0.2"> 
+        <source src="bg-sound.mp3" type="audio/mp3">
+    </audio>
+
     <audio id="light-sound" preload="auto">
         <source src="Tzz.mp3" type="audio/mp3">
     </audio>
@@ -163,6 +193,7 @@
     <button id="settings-btn" onclick="openModal()">Write</button>
     <button id="sound-btn" onclick="toggleSound()"><i class="fas fa-volume-up"></i></button>
 
+    <div id="coord-info">Tıklanan yerin koordinatı burada çıkacak</div>
 
     <div id="modal-overlay">
         <div class="modal-content">
@@ -194,20 +225,27 @@
             if (!soundEnabled) return;
             const sound = document.getElementById('light-sound');
             sound.currentTime = 0;
-            sound.play().catch(err => console.log('Sound play error:', err));
+            sound.play().catch(err => console.log('Light sound play error:', err));
         }
 
         function toggleSound() {
             soundEnabled = !soundEnabled;
             const btn = document.getElementById('sound-btn');
             const icon = btn.querySelector('i');
+            const bgMusic = document.getElementById('bg-music');
+
             if (soundEnabled) {
                 icon.className = 'fas fa-volume-up';
+                // Müzik çalmaya başlar
+                bgMusic.play().catch(err => console.log('BG Music play failure on toggle:', err)); 
             } else {
                 icon.className = 'fas fa-volume-mute';
+                // Müzik durur
+                bgMusic.pause(); 
             }
         }
 
+        // KULLANICININ ÖZEL KOORDİNATLARI (Responsive Çalışır)
         const letterMap = {
             'A': { left: '22.5%', top: '14.0%', color: '#d4d4d4' },
             'B': { left: '31.5%', top: '14.5%', color: '#4cb7ff' },
@@ -245,6 +283,11 @@
 
         window.onload = () => {
             createBulbs();
+            // Sayfa yüklenir yüklenmez müziği çalmayı dene
+            const bgMusic = document.getElementById('bg-music');
+            bgMusic.play().catch(err => {
+                console.log('BG music autoplay blocked. Waiting for user interaction.');
+            });
         };
 
         function createBulbs() {
@@ -283,7 +326,13 @@
             document.getElementById('modal-overlay').classList.add('hidden');
             isAnimating = true;
 
-            // Flash all bulbs 3 times before starting
+            // Kilitli kalmışsa BG müziği başlat
+            const bgMusic = document.getElementById('bg-music');
+            if (bgMusic.paused && soundEnabled) {
+                 bgMusic.play().catch(err => console.log('BG Music play failure on click:', err));
+            }
+            
+            // Animasyon öncesi flaş
             flashAllBulbs(3, () => {
                 runLoop();
             });
@@ -291,23 +340,19 @@
 
         async function flashAllBulbs(times, callback) {
             const bulbs = document.querySelectorAll('.bulb');
-            const flashCount = 3; // Fast electricity flashing
+            const flashCount = 3; 
 
             for (let i = 0; i < flashCount; i++) {
-                // Turn on all bulbs
                 bulbs.forEach(bulb => bulb.classList.add('active'));
                 playLightSound();
                 await new Promise(r => setTimeout(r, 80));
 
-                // Turn off all bulbs
                 bulbs.forEach(bulb => bulb.classList.remove('active'));
                 await new Promise(r => setTimeout(r, 80));
             }
 
-            // Wait 1-2 seconds before starting the message animation
             await new Promise(r => setTimeout(r, 1000));
 
-            // Call the callback after flashing is done
             if (callback) callback();
         }
 
@@ -329,18 +374,19 @@
             }
 
             if (isAnimating) {
-                // Message finished - light all bulbs for 2 seconds to show completion
+                // Mesaj bittiğinde tüm ampulleri yak
                 const allBulbs = document.querySelectorAll('.bulb');
                 allBulbs.forEach(bulb => bulb.classList.add('active'));
                 await new Promise(r => animationTimeout = setTimeout(r, 2000));
                 allBulbs.forEach(bulb => bulb.classList.remove('active'));
 
-                // Wait before repeating
+                // Tekrar başlamadan önce bekle
                 await new Promise(r => animationTimeout = setTimeout(r, 1000));
-                runLoop();
+                runLoop(); // Sonsuz döngü
             }
         }
 
+        // GELİŞTİRİCİ MODU FONKSİYONLARI (Koordinat Bulucu)
         let devMode = false;
         function toggleDevMode() {
             devMode = !devMode;
