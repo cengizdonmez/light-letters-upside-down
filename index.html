@@ -64,10 +64,9 @@
             z-index: 10;
         }
 
-        /* Sağ Üstteki Butonlar */
-        #settings-btn, #sound-btn {
+        /* Sağ Üstteki Butonlar Ortak Stil */
+        #settings-btn, #sound-btn, #display-toggle-btn {
             position: fixed;
-            top: 20px;
             right: 20px;
             padding: 10px 20px;
             background: rgba(0, 0, 0, 0.7);
@@ -78,11 +77,13 @@
             opacity: 0.3;
             transition: opacity 0.3s, border-color 0.3s;
         }
-        #sound-btn {
-            top: 65px;
-            padding: 10px;
-        }
-        #settings-btn:hover, #sound-btn:hover {
+        
+        /* Buton Pozisyonları */
+        #settings-btn { top: 20px; }
+        #sound-btn { top: 65px; padding: 10px; }
+        #display-toggle-btn { top: 110px; padding: 10px; } /* YENİ BUTON POZİSYONU */
+
+        #settings-btn:hover, #sound-btn:hover, #display-toggle-btn:hover {
             opacity: 0.9;
             border-color: #c41e3a;
         }
@@ -177,6 +178,7 @@
             border-radius: 5px;
             white-space: nowrap; 
             transition: opacity 0.5s;
+            opacity: 1; /* Başlangıçta görünür */
         }
     </style>
 </head>
@@ -199,6 +201,7 @@
 
     <button id="settings-btn" onclick="openModal()">Write</button>
     <button id="sound-btn" onclick="toggleSound()"><i class="fas fa-volume-up"></i></button>
+    <button id="display-toggle-btn" onclick="toggleDisplay()"><i class="fas fa-eye-slash"></i></button> 
 
     <div id="coord-info">Tıklanan yerin koordinatı burada çıkacak</div>
 
@@ -227,6 +230,7 @@
 
     <script>
         let soundEnabled = true;
+        let displayVisible = true; // YENİ: Başlangıçta altyazı görünür
         const display = document.getElementById('message-display'); 
 
         function playLightSound() {
@@ -234,6 +238,24 @@
             const sound = document.getElementById('light-sound');
             sound.currentTime = 0;
             sound.play().catch(err => console.log('Light sound play error:', err));
+        }
+        
+        // YENİ FONKSİYON: Altyazı görünürlüğünü açıp kapar
+        function toggleDisplay() {
+            const btn = document.getElementById('display-toggle-btn');
+            const icon = btn.querySelector('i');
+
+            if (displayVisible) {
+                // Gizle
+                display.style.opacity = 0;
+                icon.className = 'fas fa-eye'; // Açık göz ikonu: Bir sonraki tıklamada açılacağını belirtir
+                displayVisible = false;
+            } else {
+                // Göster
+                display.style.opacity = 1;
+                icon.className = 'fas fa-eye-slash'; // Kapalı göz ikonu: Bir sonraki tıklamada gizleneceğini belirtir
+                displayVisible = true;
+            }
         }
 
         function toggleSound() {
@@ -293,7 +315,7 @@
             bgMusic.play().catch(err => {
                 console.log('BG music autoplay blocked. Waiting for user interaction.');
             });
-            display.textContent = ''; // Başlangıçta ekranı temizle
+            display.textContent = ''; 
         };
 
         function createBulbs() {
@@ -322,14 +344,13 @@
             isAnimating = false;
             clearTimeout(animationTimeout);
             document.querySelectorAll('.bulb').forEach(b => b.classList.remove('active'));
-            display.textContent = ''; // Animasyon durunca mesajı temizle
+            display.textContent = ''; 
         }
 
         function startAnimation() {
             const input = document.getElementById('message-input').value;
             if (!input.trim()) return;
 
-            // GÜNCELLEME: Sadece İngilizce A-Z harfleri ve Boşluk karakterleri kalacak.
             currentMessage = input.toUpperCase().replace(/[^A-Z ]/g, ''); 
             
             document.getElementById('modal-overlay').classList.add('hidden');
@@ -366,24 +387,21 @@
         async function runLoop() {
             if (!isAnimating) return;
             
-            // YENİ EK: Her döngü başlangıcında mesajı sıfırla
             display.textContent = ''; 
             
             for (let i = 0; i < currentMessage.length; i++) {
                 if (!isAnimating) break;
                 const char = currentMessage[i];
                 
-                // Eğer karakter boşluk ise: Ampul yakma ve ses kısmını atla, sadece bekle
                 if (char === ' ') {
                     display.textContent += ' ';
-                    await new Promise(r => animationTimeout = setTimeout(r, 500)); // Boşluk için kısa bekleme
+                    await new Promise(r => animationTimeout = setTimeout(r, 500)); 
                     continue; 
                 }
 
                 const bulb = document.getElementById('bulb-' + char);
 
                 if (bulb) {
-                    // Mesajı ekrana yaz
                     display.textContent += char; 
                     
                     bulb.classList.add('active');
