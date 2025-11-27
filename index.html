@@ -64,8 +64,8 @@
             z-index: 10;
         }
 
-        /* Sağ Üstteki Ayar Butonu */
-        #settings-btn {
+        /* Sağ Üstteki Butonlar */
+        #settings-btn, #sound-btn {
             position: fixed;
             top: 20px;
             right: 20px;
@@ -76,30 +76,17 @@
             cursor: pointer;
             z-index: 1000;
             opacity: 0.3;
+            transition: opacity 0.3s, border-color 0.3s;
         }
-        #settings-btn:hover{
-            opacity: 0.9;
-            border-color: #c41e3a;
-        }
-
-        /* Ses Butonu */
         #sound-btn {
-            position: fixed;
             top: 65px;
-            right: 20px;
             padding: 10px;
-            background: rgba(0, 0, 0, 0.7);
-            color: #fff;
-            border: 1px solid #fff;
-            cursor: pointer;
-            z-index: 1000;
-            opacity: 0.3;
         }
-        #sound-btn:hover {
+        #settings-btn:hover, #sound-btn:hover {
             opacity: 0.9;
             border-color: #c41e3a;
         }
-
+        
         /* Modal (Giriş Ekranı) */
         #modal-overlay {
             position: fixed;
@@ -173,6 +160,24 @@
             color: #000000b8;
             z-index: 0;
         }
+        
+        /* YAZILAN MESAJI GÖSTEREN ALAN */
+        #message-display {
+            position: fixed;
+            bottom: 30px; 
+            left: 50%;
+            transform: translateX(-50%);
+            font-family: 'DK Downward Fall', 'Courier New', monospace;
+            font-size: 3rem; 
+            color: #000; /* SİYAH OLACAK */
+            text-shadow: 0 0 10px #c41e3a, 0 0 4px #c41e3a; /* Güçlü kırmızı parlama */
+            z-index: 50; 
+            padding: 10px 20px;
+            background: rgba(0, 0, 0, 0.5); 
+            border-radius: 5px;
+            white-space: nowrap; 
+            transition: opacity 0.5s;
+        }
     </style>
 </head>
 <body>
@@ -181,8 +186,10 @@
         <img src="no-light-wall.png" id="wall-img" alt="Stranger Things Wall">
         <div id="z-letter">Z</div>
     </div>
+    
+    <div id="message-display"></div>
 
-    <audio id="bg-music" loop preload="auto" volume="0.2"> 
+    <audio id="bg-music" loop preload="auto" volume="0.2">
         <source src="bg-sound.mp3" type="audio/mp3">
     </audio>
 
@@ -220,6 +227,7 @@
 
     <script>
         let soundEnabled = true;
+        const display = document.getElementById('message-display'); 
 
         function playLightSound() {
             if (!soundEnabled) return;
@@ -236,16 +244,14 @@
 
             if (soundEnabled) {
                 icon.className = 'fas fa-volume-up';
-                // Müzik çalmaya başlar
                 bgMusic.play().catch(err => console.log('BG Music play failure on toggle:', err)); 
             } else {
                 icon.className = 'fas fa-volume-mute';
-                // Müzik durur
                 bgMusic.pause(); 
             }
         }
 
-        // KULLANICININ ÖZEL KOORDİNATLARI (Responsive Çalışır)
+        // KULLANICININ ÖZEL KOORDİNATLARI
         const letterMap = {
             'A': { left: '22.5%', top: '14.0%', color: '#d4d4d4' },
             'B': { left: '31.5%', top: '14.5%', color: '#4cb7ff' },
@@ -283,11 +289,11 @@
 
         window.onload = () => {
             createBulbs();
-            // Sayfa yüklenir yüklenmez müziği çalmayı dene
             const bgMusic = document.getElementById('bg-music');
             bgMusic.play().catch(err => {
                 console.log('BG music autoplay blocked. Waiting for user interaction.');
             });
+            display.textContent = ''; // Başlangıçta ekranı temizle
         };
 
         function createBulbs() {
@@ -316,23 +322,24 @@
             isAnimating = false;
             clearTimeout(animationTimeout);
             document.querySelectorAll('.bulb').forEach(b => b.classList.remove('active'));
+            display.textContent = ''; // Animasyon durunca mesajı temizle
         }
 
         function startAnimation() {
             const input = document.getElementById('message-input').value;
             if (!input.trim()) return;
 
-            currentMessage = input.toUpperCase().replace(/[^A-Z]/g, '');
+            // GÜNCELLEME: Sadece İngilizce A-Z harfleri ve Boşluk karakterleri kalacak.
+            currentMessage = input.toUpperCase().replace(/[^A-Z ]/g, ''); 
+            
             document.getElementById('modal-overlay').classList.add('hidden');
             isAnimating = true;
 
-            // Kilitli kalmışsa BG müziği başlat
             const bgMusic = document.getElementById('bg-music');
             if (bgMusic.paused && soundEnabled) {
                  bgMusic.play().catch(err => console.log('BG Music play failure on click:', err));
             }
             
-            // Animasyon öncesi flaş
             flashAllBulbs(3, () => {
                 runLoop();
             });
@@ -358,13 +365,27 @@
 
         async function runLoop() {
             if (!isAnimating) return;
-
+            
+            // YENİ EK: Her döngü başlangıcında mesajı sıfırla
+            display.textContent = ''; 
+            
             for (let i = 0; i < currentMessage.length; i++) {
                 if (!isAnimating) break;
                 const char = currentMessage[i];
+                
+                // Eğer karakter boşluk ise: Ampul yakma ve ses kısmını atla, sadece bekle
+                if (char === ' ') {
+                    display.textContent += ' ';
+                    await new Promise(r => animationTimeout = setTimeout(r, 500)); // Boşluk için kısa bekleme
+                    continue; 
+                }
+
                 const bulb = document.getElementById('bulb-' + char);
 
                 if (bulb) {
+                    // Mesajı ekrana yaz
+                    display.textContent += char; 
+                    
                     bulb.classList.add('active');
                     playLightSound();
                     await new Promise(r => animationTimeout = setTimeout(r, 1000));
@@ -374,19 +395,16 @@
             }
 
             if (isAnimating) {
-                // Mesaj bittiğinde tüm ampulleri yak
                 const allBulbs = document.querySelectorAll('.bulb');
                 allBulbs.forEach(bulb => bulb.classList.add('active'));
                 await new Promise(r => animationTimeout = setTimeout(r, 2000));
                 allBulbs.forEach(bulb => bulb.classList.remove('active'));
 
-                // Tekrar başlamadan önce bekle
                 await new Promise(r => animationTimeout = setTimeout(r, 1000));
-                runLoop(); // Sonsuz döngü
+                runLoop(); 
             }
         }
 
-        // GELİŞTİRİCİ MODU FONKSİYONLARI (Koordinat Bulucu)
         let devMode = false;
         function toggleDevMode() {
             devMode = !devMode;
