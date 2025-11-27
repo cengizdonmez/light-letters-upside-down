@@ -3,15 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stranger Things - Responsive Wall</title>
+    <title>ST - Light Letters Upside Down</title>
     <style>
-        /* Custom Font Face */
         @font-face {
             font-family: 'DK Downward Fall';
             src: url('DK Downward Fall.ttf') format('truetype');
         }
 
-        /* Siyah Arka Plan */
         body {
             margin: 0;
             padding: 0;
@@ -25,46 +23,40 @@
             font-family: 'Courier New', Courier, monospace;
         }
 
-        /* OYUN ALANI (Resim ve Işıkları Tutan Kutu) */
         #game-board {
             position: relative;
-            /* Resim en boy oranını koruyarak ekrana sığsın */
             max-width: 100%;
             max-height: 100%;
             box-shadow: 0 0 50px rgba(0,0,0,0.8);
         }
 
-        /* Duvar Resmi */
         #wall-img {
             display: block;
             width: 100%;
             height: auto;
-            max-height: 100vh; /* Ekran boyunu taşmasın */
-            pointer-events: auto; /* Tıklama için gerekli */
+            max-height: 100vh; 
+            pointer-events: auto; 
         }
 
-        /* Işık Noktaları (Ampuller) */
         .bulb {
             position: absolute;
-            width: 2.5%; /* Sabit px yerine resme göre oranla büyüsün */
-            padding-bottom: 2.5%; /* Kare olması için trick */
+            width: 2.5%; 
+            padding-bottom: 2.5%; 
             height: 0;
             border-radius: 50%;
             transform: translate(-50%, -50%);
-            opacity: 0.3;
+            opacity: 0;
             filter: blur(4px);
             transition: opacity 0.1s;
             mix-blend-mode: hard-light;
         }
 
-        /* Işık Yandığında */
         .bulb.active {
             opacity: 1;
             box-shadow: 0 0 20px 5px currentColor;
             z-index: 10;
         }
 
-        /* UI Elemanları (Buton ve Modal) */
         #settings-btn {
             position: fixed;
             top: 20px;
@@ -75,6 +67,11 @@
             border: 1px solid #fff;
             cursor: pointer;
             z-index: 1000;
+            opacity: 0.3;
+        }
+        #settings-btn:hover{
+            opacity: 0.9;
+            border-color: #c41e3a;
         }
 
         #modal-overlay {
@@ -83,11 +80,12 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.9);
+            background: rgba(0, 0, 0, 0.1);
             display: flex;
             justify-content: center;
             align-items: center;
             z-index: 2000;
+            backdrop-filter: blur(4px);
         }
 
         .modal-content {
@@ -109,7 +107,6 @@
 
         .hidden { display: none !important; }
         
-        /* Koordinat Bulucu Bilgi Kutusu */
         #coord-info {
             position: fixed;
             bottom: 10px;
@@ -118,11 +115,10 @@
             color: black;
             padding: 5px;
             font-size: 12px;
-            display: none; /* Sadece geliştirme modunda açılacak */
+            display: none; 
             z-index: 3000;
         }
 
-        /* Z Harfi */
         #z-letter {
             position: absolute;
             left: 88%;
@@ -142,36 +138,35 @@
         <div id="z-letter">Z</div>
     </div>
 
-    <button id="settings-btn" onclick="openModal()">Mesaj Yaz</button>
-    <div id="coord-info">Tıklanan yerin koordinatı burada çıkacak</div>
+    <button id="settings-btn" onclick="openModal()">Write</button>
+    
 
     <div id="modal-overlay">
         <div class="modal-content">
-            <h2 style="color:#c41e3a; letter-spacing:3px; text-shadow: 0 0 5px #c41e3a;">BAŞ AŞAĞI DÜNYA'DAN İLETİŞİM</h2>
-            
+            <h2 style="color:#c41e3a; letter-spacing:3px; text-shadow: 0 0 5px #c41e3a;">MESSAGE FROM THE UPSIDE DOWN</h2>
+
             <p style="font-size: 1.1rem; color: #ddd;">
-                Karanlık boşluğu kıracak, Işıkları titretecek mesajı girin.
+                Break through the darkness. Make the lights speak.
             </p>
 
-            <input 
-                type="text" 
-                id="message-input" 
-                placeholder="MAMA NEREDEYİM" 
-                maxlength="50" 
+            <input
+                type="text"
+                id="message-input"
+                placeholder="TYPE MESSAGE..."
+                maxlength="50"
                 autocomplete="off"
             >
             <br>
 
-            <button class="start-btn" onclick="startAnimation()">IŞIKLARI YAK</button>
+            <button class="start-btn" onclick="startAnimation()">LIGHT IT UP</button>
             
             <br><br>
-            <small style="color:#777; cursor:pointer;" onclick="toggleDevMode()">[Geliştirici Modu: Koordinat Bul]</small>
         </div>
     </div>
 
     <script>
         const letterMap = {
-            'A': { left: '22.5%', top: '14.0%', color: '#fff' },
+            'A': { left: '22.5%', top: '14.0%', color: '#d4d4d4' },
             'B': { left: '31.5%', top: '14.5%', color: '#4cb7ff' },
             'C': { left: '38.0%', top: '16.0%', color: '#e74c3c' },
             'D': { left: '49.5%', top: '19.0%', color: '#2ecc71' },
@@ -182,16 +177,16 @@
 
             'I': { left: '9.5%', top: '33.0%', color: '#e74c3c' },
             'J': { left: '23.5%', top: '39.0%', color: '#4cb7ff' },
-            'K': { left: '32.0%', top: '41.5%', color: '#fff' },
+            'K': { left: '32.0%', top: '41.5%', color: '#d4d4d4' },
             'L': { left: '40.5%', top: '43.0%', color: '#4cb7ff' },
             'M': { left: '50%', top: '43.0%', color: '#f1c40f' },
             'N': { left: '57.0%', top: '40.0%', color: '#2ecc71' },
             'O': { left: '66.0%', top: '38.0%', color: '#e74c3c' },
-            'P': { left: '74.0%', top: '39.0%', color: '#fff' },
+            'P': { left: '74.0%', top: '39.0%', color: '#d4d4d4' },
             'Q': { left: '90%', top: '41.5%', color: '#e67e22' },
 
             'R': { left: '16.0%', top: '59.0%', color: '#4cb7ff' },
-            'S': { left: '25%', top: '62.0%', color: '#fff' },
+            'S': { left: '25%', top: '62.0%', color: '#d4d4d4' },
             'T': { left: '32.4%', top: '65.0%', color: '#f1c40f' },
             'U': { left: '44.0%', top: '65.0%', color: '#4cb7ff' },
             'V': { left: '52%', top: '65.0%', color: '#e74c3c' },
@@ -221,12 +216,11 @@
                 bulb.style.left = data.left;
                 bulb.style.top = data.top;
                 bulb.style.backgroundColor = data.color;
-                bulb.style.color = data.color; // Gölge rengi
+                bulb.style.color = data.color; 
                 board.appendChild(bulb);
             }
         }
 
-        // --- ANİMASYON MANTIĞI ---
         function openModal() {
             stopAnimation();
             document.getElementById('modal-overlay').classList.remove('hidden');
@@ -241,11 +235,36 @@
         function startAnimation() {
             const input = document.getElementById('message-input').value;
             if (!input.trim()) return;
-            
+
             currentMessage = input.toUpperCase().replace(/[^A-Z]/g, '');
             document.getElementById('modal-overlay').classList.add('hidden');
             isAnimating = true;
-            runLoop();
+
+            // Flash all bulbs 3 times before starting
+            flashAllBulbs(3, () => {
+                runLoop();
+            });
+        }
+
+        async function flashAllBulbs(times, callback) {
+            const bulbs = document.querySelectorAll('.bulb');
+            const flashCount = 3; // Fast electricity flashing
+
+            for (let i = 0; i < flashCount; i++) {
+                // Turn on all bulbs
+                bulbs.forEach(bulb => bulb.classList.add('active'));
+                await new Promise(r => setTimeout(r, 80));
+
+                // Turn off all bulbs
+                bulbs.forEach(bulb => bulb.classList.remove('active'));
+                await new Promise(r => setTimeout(r, 80));
+            }
+
+            // Wait 1-2 seconds before starting the message animation
+            await new Promise(r => setTimeout(r, 1000));
+
+            // Call the callback after flashing is done
+            if (callback) callback();
         }
 
         async function runLoop() {
@@ -263,24 +282,29 @@
                     await new Promise(r => animationTimeout = setTimeout(r, 300));
                 }
             }
-            
+
             if (isAnimating) {
+                // Message finished - light all bulbs for 2 seconds to show completion
+                const allBulbs = document.querySelectorAll('.bulb');
+                allBulbs.forEach(bulb => bulb.classList.add('active'));
                 await new Promise(r => animationTimeout = setTimeout(r, 2000));
+                allBulbs.forEach(bulb => bulb.classList.remove('active'));
+
+                // Wait before repeating
+                await new Promise(r => animationTimeout = setTimeout(r, 1000));
                 runLoop();
             }
         }
 
-        // --- GELİŞTİRİCİ MODU (Koordinat Ayarlamak İçin) ---
         let devMode = false;
         function toggleDevMode() {
             devMode = !devMode;
             const infoBox = document.getElementById('coord-info');
             infoBox.style.display = devMode ? 'block' : 'none';
             document.getElementById('modal-overlay').classList.add('hidden');
-            alert(devMode ? "Geliştirici Modu AÇIK: Resimde bir lambaya tıkla, koordinatı al." : "Geliştirici Modu KAPALI");
+            alert(devMode ? "Developer Mode ON: Click a light bulb to get coordinates." : "Developer Mode OFF");
         }
 
-        // Resme tıklayınca koordinat hesapla
         document.getElementById('wall-img').addEventListener('click', function(e) {
             if (!devMode) return;
 
@@ -288,16 +312,14 @@
             const x = e.clientX - rect.left;
             const y = e.clientY - rect.top;
 
-            // Yüzdeleri hesapla
             const perX = (x / rect.width * 100).toFixed(1);
             const perY = (y / rect.height * 100).toFixed(1);
 
             const coordText = `left: '${perX}%', top: '${perY}%'`;
-            console.log(coordText); // Konsola yaz
+            console.log(coordText); 
             
-            // Ekrana yaz ve kopyala
             const infoBox = document.getElementById('coord-info');
-            infoBox.innerHTML = `Kopyalandı: <b>${coordText}</b>`;
+            infoBox.innerHTML = `Copied: <b>${coordText}</b>`;
             navigator.clipboard.writeText(coordText);
         });
     </script>
